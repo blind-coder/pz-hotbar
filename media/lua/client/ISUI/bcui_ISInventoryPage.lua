@@ -504,20 +504,36 @@ function BCUIISInventoryItem:render() -- {{{
 		self:drawText(cond, (self:getWidth() - condWidth) / 2, imgDim.y + imgDim.h + 2, 1-r, 1-g, 1-b, a);
 	end
 	-- }}}
-	self:drawTextureScaled(self.object.item:getTexture(), imgDim.x, imgDim.y, imgDim.w, imgDim.h, 1, 1, 1, 1);
+	self:drawTextureScaled(self.object.item:getTex(), imgDim.x, imgDim.y, imgDim.w, imgDim.h, 1, self.object.item:getR(), self.object.item:getG(), self.object.item:getB());
 	self:drawText(itemDesc, self:getWidth() / 2 - textWidth / 2, 2, 1, 1, 1, 1);
 end
 -- }}}
 
 BCUIISInventoryPage = ISPanel:derive("BCUIISInventoryPage");
 function BCUIISInventoryPage:createChildren() -- {{{
-	local offx = (self.width  - 50)/ 4;
+	local offx = (self.width  - 50) / 4;
 	local offy = (self.height - 50) / 4;
 	for x=0,3 do
 		for y=0,3 do
 			self:addChild(BCUIISInventoryItem:new(55 + offx * x, 25 + offy * y, offx - 10, offy - 10, self, self.items[x][y]));
 		end
 	end
+	self.prevPage = ISButton:new(55           , 25 + offy * 4, (offx - 10) * 2 + 10, 30, "<-- Previous page", self, self.goPrevPage);
+	self.prevPage:setHeight(self:getHeight() - (self.prevPage:getY() + 7));
+	self.nextPage = ISButton:new(55 + offx * 2, 25 + offy * 4, (offx - 10) * 2 + 10, 30, "Next page -->", self, self.goNextPage);
+	self.nextPage:setHeight(self:getHeight() - (self.nextPage:getY() + 7));
+	self:addChild(self.prevPage);
+	self:addChild(self.nextPage);
+end
+-- }}}
+function BCUIISInventoryPage:goPrevPage() -- {{{
+	self.page = math.max(0, self.page - 1);
+	self:updateInventory(true);
+end
+-- }}}
+function BCUIISInventoryPage:goNextPage() -- {{{
+	self.page = math.min(math.floor(self.inventory:getItems():size() / 16), self.page + 1);
+	self:updateInventory(true);
 end
 -- }}}
 function BCUIISInventoryPage.sortItems(a, b) -- {{{
