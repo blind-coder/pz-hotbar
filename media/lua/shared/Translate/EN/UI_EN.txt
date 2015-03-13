@@ -1,5 +1,8 @@
 UI_EN = {
 	UI_Hotbar = "Hotbar",
 	UI_HotBarPutItemInSlot = "Put item %1 into slot %2",
-	UI_HotBarReplaceItemInSlotWithItem = "Replace item %1 in slot %2 with %3"
+	UI_HotBarReplaceItemInSlotWithItem = "Replace item %1 in slot %2 with %3",
+	UI_optionscreen_binding_Hotbar = "Hotbar (quick access bar)",
+	UI_optionscreen_binding_Toggle_Hotbar = "Toggle hotbar",
+	UI_optionscreen_hotbar_change_size = "Size of Hotbar"
 }

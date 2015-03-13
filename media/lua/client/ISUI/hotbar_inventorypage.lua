@@ -1,17 +1,18 @@
 require "ISUI/ISPanel"
 require "ISUI/ISButton"
 require "ISUI/ISInventoryPane"
+require "ISUI/ISInventoryPage"
 require "ISUI/ISResizeWidget"
 require "ISUI/ISMouseDrag"
 require "ISUI/ISLayoutManager"
-require "TimedActions/ISInventoryTransferAction.lua"
+require "TimedActions/ISInventoryTransferAction"
 
 require "defines"
 
 HotBar = {};
 HotBar.dump = function(o, lvl) -- {{{ Small function to dump an object.
 	if lvl == nil then lvl = 0 end
-	if lvl >= 10 then return "Stack overflow ("..tostring(o)..")" end
+	if lvl >= 10 then return "SO ("..tostring(o)..")" end
 
 	if type(o) == 'table' then
 		local s = '{ '
@@ -20,10 +21,10 @@ HotBar.dump = function(o, lvl) -- {{{ Small function to dump an object.
 				s = s .. '['..k..'] = '..tostring(v);
 			else
 				if type(k) ~= 'number' then k = '"'..k..'"' end
-				s = s .. '['..k..'] = ' .. HotBar.dump(v, lvl + 1) .. ','
+				s = s .. '['..k..'] = ' .. HotBar.dump(v, lvl + 1) .. ',\n'
 			end
 		end
-		return s .. '} '
+		return s .. '}\n'
 	else
 		return tostring(o)
 	end
@@ -44,7 +45,7 @@ end
 -- }}}
 
 HotBarISInventoryItem = ISPanel:derive("HotBarISInventoryItem");
-function HotBarISInventoryItem:new (x, y, width, height, parent, object) -- {{{
+function HotBarISInventoryItem:new (x, y, width, height, parent, object, slot) -- {{{
 	local o = {}
 	o = ISPanel:new(x, y, width, height);
 	setmetatable(o, self)
@@ -62,6 +63,7 @@ function HotBarISInventoryItem:new (x, y, width, height, parent, object) -- {{{
 	o.width = width;
 	o.object = object;
 	o.parent = parent;
+	o.slot = slot;
 
 	return o
 end
@@ -75,20 +77,20 @@ function HotBarISInventoryItem:onRightMouseUp(x, y) -- {{{
 end
 -- }}}
 function HotBarISInventoryItem:createChildren() -- {{{
-	self.drop = ISButton:new(0, self:getHeight() - 10, self:getWidth() / 2, 10, "Drop")
-	self:addChild(self.drop);
+	--self.drop = ISButton:new(0, self:getHeight() - 10, self:getWidth() / 2, 10, "Drop", self.slot, HotBar.DropItemInSlot)
+	--self:addChild(self.drop);
 
-	self.clear = ISButton:new(self:getWidth() / 2, self:getHeight() - 10, self:getWidth() / 2, 10, "Clear")
+	self.clear = ISButton:new(0, self:getHeight() - 10, self:getWidth(), 10, "Clear", self.slot, HotBar.ClearSlot)
 	self:addChild(self.clear);
 end
 -- }}}
 function HotBarISInventoryItem:render() -- {{{
 	if self.object.item == nil then
-		self.drop:setVisible(false);
+		--self.drop:setVisible(false);
 		self.clear:setVisible(false);
 		return;
 	end
-	self.drop:setVisible(false);
+	--self.drop:setVisible(false);
 	self.clear:setVisible(true);
 
 	local texture = self.object.texture;
@@ -97,7 +99,7 @@ function HotBarISInventoryItem:render() -- {{{
 
 	if self.object.count > 0 then
 		texture = getSpecificPlayer(self.parent.player):getInventory():FindAndReturn(self.object.item):getTex();
-		self.drop:setVisible(true);
+		--self.drop:setVisible(true);
 		alpha = 1;
 	end
 
@@ -113,7 +115,7 @@ HotBarISInventoryPage = ISPanel:derive("HotBarISInventoryPage");
 function HotBarISInventoryPage:createChildren() -- {{{
 	local offx = (self.width) / 10;
 	for x=0,9 do
-		self:addChild(HotBarISInventoryItem:new(offx * x + 5, 5, offx - 10, self.height - 10, self, self.items[x]));
+		self:addChild(HotBarISInventoryItem:new(offx * x + 5, 5, offx - 10, self.height - 10, self, self.items[x], x));
 	end
 end
 -- }}}
@@ -143,10 +145,9 @@ function HotBarISInventoryPage:updateInventory(force) -- {{{
 			local p = InventoryItemFactory.CreateItem(self.items[i].item);
 			self.items[i].texture = p:getTexture();
 		else
+			self.items[i].count = 0;
 		end
 	end
-
-	HotBar.pline(self.items);
 
 	self.dirty = false;
 end -- }}}
@@ -193,7 +194,7 @@ function HotBarISInventoryPage:new (x, y, width, height, player) -- {{{
 		[9] = { item = nil, count = 0, texture = nil },
 	}; -- }}}
 
-	local options = getFileReader("hotbar.lua", true);
+	local options = getFileReader("hotbar_items.txt", true);
 	local i = 0;
 	line = options:readLine();
 	while line ~= nil and i < 10 do
@@ -208,15 +209,38 @@ end
 -- }}}
 
 HotBarISInventoryPage.onKeyPressed = function(key) -- {{{
-	if key == getCore():getKey("Toggle Inventory") and getSpecificPlayer(0) and getGameSpeed() > 0 then
-		if HotBar.inventoryPage == nil then
-			HotBar.inventoryPage = HotBarISInventoryPage:new(25, getCore():getScreenHeight()-100, getCore():getScreenWidth() - 50, 100, 0);
-			HotBar.inventoryPage:setVisible(true);
-			HotBar.inventoryPage:addToUIManager();
-		else
-			HotBar.inventoryPage:setVisible(not HotBar.inventoryPage:getIsVisible());
-		end
+	if key == getCore():getKey("Toggle_Hotbar") and getSpecificPlayer(0) and getGameSpeed() > 0 then
+		HotBar.Toggle();
 	end
+end
+-- }}}
+HotBar.Toggle = function() -- {{{
+	local size = 75;
+
+	local options = getFileReader("hotbar_size.txt", true);
+	if options ~= nil then
+		size = tonumber(options:readLine());
+		options:close();
+	end
+
+	local width = (size * 10);
+
+	if HotBar.inventoryPage == nil then
+		HotBar.inventoryPage = HotBarISInventoryPage:new((getCore():getScreenWidth() - width) / 2, getCore():getScreenHeight()-size, width, size, 0);
+		HotBar.inventoryPage:setVisible(true);
+		HotBar.inventoryPage:addToUIManager();
+	else
+		HotBar.inventoryPage:setVisible(not HotBar.inventoryPage:getIsVisible());
+	end
+end
+-- }}}
+HotBar.ReInit = function() -- {{{
+	if HotBar.inventoryPage ~= nil then
+		HotBar.inventoryPage:setVisible(false);
+		HotBar.inventoryPage:removeFromUIManager();
+		HotBar.inventoryPage = nil;
+	end
+	HotBar.Toggle();
 end
 -- }}}
 
@@ -256,18 +280,31 @@ HotBar.FillContextMenu = function(player, context, items) -- {{{
 	end
 end
 -- }}}
+HotBar.ClearSlot = function(slot) -- {{{
+	HotBar.PutItemInSlot(nil, slot);
+end
+-- }}}
 HotBar.PutItemInSlot = function(item, slot) -- {{{
 	HotBar.inventoryPage.items[slot].item = item;
 	HotBar.inventoryPage:updateInventory(true);
 
-	local options = getFileWriter("hotbar.lua", true, false); -- overwrite
+	local options = getFileWriter("hotbar_items.txt", true, false); -- overwrite
 	for i=0,9 do
 		options:write(tostring(HotBar.inventoryPage.items[i].item).."\n");
 	end
 	options:close();
 end
 -- }}}
+--[[
+HotBar.DropItemInSlot = function(slot) -- {{{
+	local player = HotBar.inventoryPage.player;
+	local item = getSpecificPlayer(player):getInventory():FindAndReturn(HotBar.inventoryPage.items[i].item);
+	ISInventoryPaneContextMenu.dropItem(item, player);
+end
+-- }}}
+--]]
 
 Events.OnKeyPressed.Add(HotBarISInventoryPage.onKeyPressed);
 Events.OnContainerUpdate.Add(HotBarISInventoryPage.OnContainerUpdate);
 Events.OnFillInventoryObjectContextMenu.Add(HotBar.FillContextMenu);
+Events.OnGameStart.Add(HotBar.Toggle);
