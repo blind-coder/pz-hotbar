@@ -1,0 +1,5 @@
+UI_EN = {
+	UI_Hotbar = "Hotbar",
+	UI_HotBarPutItemInSlot = "Put item %1 into slot %2",
+	UI_HotBarReplaceItemInSlotWithItem = "Replace item %1 in slot %2 with %3"
+}
