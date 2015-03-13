@@ -1,4 +1,4 @@
-name=blindcoders inventory screen mod
+name=blindcoders Hotbar
 poster=empty.png
-description=UI Change.
-id=inventoryscreen
+description=A small hotbar for 10 often-used items
+id=hotbar
