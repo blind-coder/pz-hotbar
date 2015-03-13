@@ -4,6 +4,7 @@ require "ISUI/ISInventoryPane"
 require "ISUI/ISResizeWidget"
 require "ISUI/ISMouseDrag"
 require "ISUI/ISLayoutManager"
+require "TimedActions/ISInventoryTransferAction.lua"
 
 require "defines"
 
@@ -398,8 +399,41 @@ function BCUIISInventoryPage:refreshBackpacks() -- {{{
 end
 -- }}}
 --]]
-
 BCUI = {};
+BCUI.dump = function(o, lvl) -- {{{ Small function to dump an object.
+	if lvl == nil then lvl = 0 end
+	if lvl >= 10 then return "Stack overflow ("..tostring(o)..")" end
+
+	if type(o) == 'table' then
+		local s = '{ '
+		for k,v in pairs(o) do
+			if k == "prev" or k == "next" then
+				s = s .. '['..k..'] = '..tostring(v);
+			else
+				if type(k) ~= 'number' then k = '"'..k..'"' end
+				s = s .. '['..k..'] = ' .. TinyAVC.dump(v, lvl + 1) .. ','
+			end
+		end
+		return s .. '} '
+	else
+		return tostring(o)
+	end
+end
+-- }}}
+BCUI.pline = function (text) -- {{{ Print text to logfile
+	print(tostring(text));
+end
+-- }}}
+
+BCUI.ISInventoryTransferActionPerform = ISInventoryTransferAction.perform;
+function ISInventoryTransferAction:perform() -- {{{
+	BCUI.ISInventoryTransferActionPerform(self);
+	if BCUI.inventoryPage ~= nil then
+		BCUI.inventoryPage:updateInventory(true);
+		BCUI.lootPage:updateInventory(true);
+	end
+end
+-- }}}
 
 BCUIISInventoryItem = ISPanel:derive("BCUIISInventoryItem");
 function BCUIISInventoryItem:new (x, y, width, height, parent, object) -- {{{
@@ -423,6 +457,12 @@ function BCUIISInventoryItem:new (x, y, width, height, parent, object) -- {{{
 	return o
 end
 -- }}}
+function BCUIISInventoryItem:contextMenu(button) -- {{{
+	local items = {};
+	table.insert(items, self.object.item);
+	ISInventoryPaneContextMenu.createMenu(0, self.onCharacter, items, self:getAbsoluteX(), self:getAbsoluteY());
+end
+-- }}}
 function BCUIISInventoryItem:createChildren() -- {{{
 	self.drop = ISButton:new(2, self:getHeight() - 42, self:getWidth() / 2 - 4, 20, "Drop")
 	self:addChild(self.drop);
@@ -433,7 +473,7 @@ function BCUIISInventoryItem:createChildren() -- {{{
 	self.unpack = ISButton:new(2, self:getHeight() - 22, self:getWidth() / 2 - 4, 20, "Unpack")
 	self:addChild(self.unpack);
 
-	self.other = ISButton:new(self:getWidth() / 2 + 2, self:getHeight() - 22, self:getWidth() / 2 - 4, 20, "Other")
+	self.other = ISButton:new(self:getWidth() / 2 + 2, self:getHeight() - 22, self:getWidth() / 2 - 4, 20, "Other", self, BCUIISInventoryItem.contextMenu);
 	self:addChild(self.other);
 end
 -- }}}
@@ -447,9 +487,25 @@ function BCUIISInventoryItem:render() -- {{{
 		return;
 	end
 	self.drop:setVisible(true);
-	self.equip:setVisible(true);
-	self.unpack:setVisible(true);
+	local canBeEquipped = false;
+	if instanceof(self.object.item, "InventoryContainer") and self.object.item:canBeEquipped() then
+		canBeEquipped = true;
+	elseif self.object.item == getSpecificPlayer(0):getPrimaryHandItem() then
+		canBeEquipped = true;
+	elseif self.object.item == getSpecificPlayer(0):getSecondaryHandItem() then
+		canBeEquipped = true;
+	end
+	self.equip:setVisible(canBeEquipped);
+	self.unpack:setVisible(self.parent.inventory ~= getSpecificPlayer(0):getInventory());
 	self.other:setVisible(true);
+
+	if canBeEquipped then
+		if getSpecificPlayer(0):isEquipped(self.object.item) then
+			self.equip:setTitle("Unequip");
+		else
+			self.equip:setTitle("Equip");
+		end
+	end
 
 	local itemDesc = self.object.item:getName();
 	local textWidth = getTextManager():MeasureStringX(UIFont.Small, itemDesc);
@@ -510,6 +566,301 @@ end
 -- }}}
 
 BCUIISInventoryPage = ISPanel:derive("BCUIISInventoryPage");
+function BCUIISInventoryPage:selectContainer(button) -- {{{
+	self.inventory = button.inventory;
+	self:updateInventory(true);
+end
+-- }}}
+function BCUIISInventoryPage:refreshBackpacks() -- {{{
+	for _,v in pairs(self.backpacks) do
+		self:removeChild(v);
+	end
+
+	self.backpacks = {}
+
+	local c = 0;
+	if self.onCharacter then
+		containerButton = ISButton:new(2, (c*50)+15, 50, 50, "", self, self.selectContainer);
+		containerButton:initialise();
+		containerButton.borderColor.a = 0.0;
+		containerButton.capacity = self.inventory:getMaxWeight();
+		if not self.capacity then
+			self.capacity = containerButton.capacity;
+		end
+		containerButton.backgroundColor.a = 0.0;
+		containerButton.backgroundColorMouseOver = {r=0.3, g=0.3, b=0.3, a=1.0};
+		containerButton:setImage(self.invbasic);
+
+		containerButton.inventory = getSpecificPlayer(0):getInventory();
+
+		if self.inventory == containerButton.inventory then
+			containerButton.backgroundColor = {r=0.7, g=0.7, b=0.7, a=1.0};
+		end
+
+		self:addChild(containerButton);
+		self.backpacks[c] = containerButton;
+		c = c + 1;
+
+		local it = getSpecificPlayer(0):getInventory():getItems();
+		for i = 0, it:size()-1 do
+			local item = it:get(i);
+
+			if item:getCategory() == "Container" and getSpecificPlayer(0):isEquipped(item) or item:getType() == "KeyRing" then
+				-- found a container, so create a button for it...
+				local containerButton = ISButton:new(2, (c*50)+15, 50, 50, "", self, self.selectContainer);
+				containerButton:setImage(item:getTex());
+				containerButton:initialise();
+				containerButton.borderColor.a = 0.0;
+				containerButton.backgroundColor.a = 0.0;
+				containerButton.backgroundColorMouseOver = {r=0.3, g=0.3, b=0.3, a=1.0};
+				containerButton.inventory = item:getInventory();
+				containerButton.capacity = item:getCapacity();
+				containerButton.name = item:getName();
+				if self.inventory == containerButton.inventory then
+					containerButton.backgroundColor = {r=0.7, g=0.7, b=0.7, a=1.0};
+					foundIndex = c;
+					found = true;
+				end
+				self:addChild(containerButton);
+				self.backpacks[c] = containerButton;
+				c = c + 1;
+			end
+		end
+	else
+		local cx = getSpecificPlayer(0):getX();
+		local cy = getSpecificPlayer(0):getY();
+		local cz = getSpecificPlayer(0):getZ();
+		local currentSq = getSpecificPlayer(0):getCurrentSquare()
+
+		self.floorContainer = {};
+		local sqs = {}
+
+		for sqx=cx-1,cx+1 do
+			for sqy=cy-1,cy+1 do
+				local sq = getCell():getGridSquare(sqx, sqy, cz);
+				-- check if player can reach the floor square
+				if sq == currentSq or (currentSq and currentSq:isBlockedTo(sq)) then
+					sq = nil
+				end
+
+				if sq ~= nil then
+					local obs = sq:getObjects();
+					local sobs = sq:getStaticMovingObjects();
+					local wobs = sq:getWorldObjects();
+
+					BCUI.pline(sqx.."x"..sqy.."x"..cz.." obs: "..BCUI.dump(obs));
+					BCUI.pline(sqx.."x"..sqy.."x"..cz.." sobs: "..BCUI.dump(sobs));
+					BCUI.pline(sqx.."x"..sqy.."x"..cz.." wobs: "..BCUI.dump(wobs));
+
+					for i=0,obs:size()-1 do
+						local item = obs:get(i);
+						if item:getContainer() ~= nil then
+							-- found a container, so create a button for it...
+							local containerButton = ISButton:new(2, (c*50)+15, 50, 50, "", self, self.selectContainer);
+							containerButton:initialise();
+							containerButton.borderColor.a = 0.0;
+							containerButton.backgroundColor.a = 0.0;
+							containerButton.backgroundColorMouseOver = {r=0.3, g=0.3, b=0.3, a=1.0};
+							containerButton.inventory = item:getContainer();
+							containerButton.capacity = item:getContainer():getMaxWeight();
+							if self.containerIconMaps[containerButton.inventory:getType()] ~= nil then
+								containerButton:setImage(self.containerIconMaps[containerButton.inventory:getType()]);
+							else
+								containerButton:setImage(self.conDefault);
+							end
+							containerButton.name = "";
+							if self.inventory == containerButton.inventory then
+								containerButton.backgroundColor = {r=0.7, g=0.7, b=0.7, a=1.0};
+								foundIndex = c;
+								found = true;
+							end
+							if not containerButton.inventory:isExplored() then
+								if not isClient() then
+									ItemPicker.fillContainer(containerButton.inventory, 0)
+								else
+									containerButton.inventory:requestServerItemsForContainer();
+								end
+								containerButton.inventory:setExplored(true);
+							end
+							self:addChild(containerButton);
+							self.backpacks[c] = containerButton;
+							c = c + 1;
+						end
+					end
+				end
+			end
+		end
+
+		--[[
+		--{{{
+		sqs[1] = getCell():getGridSquare(cx, cy, cz);
+		for x=1,4 do
+			local gs = sqs[x];
+
+			if gs ~= nil then
+				--for y = -1, 1 do
+
+				if wobs ~= nil then
+					for i = 0, wobs:size()-1 do
+						local o = wobs:get(i);
+						if instanceof(o, "IsoWorldInventoryObject") then
+							-- FIXME: An item can be in only one container; in coop the item won't be displayed for every player.
+							BCUIISInventoryPage.floorContainer[0+1]:AddItem(o:getItem());
+						end
+					end
+				end
+
+				for i = 0, sobs:size()-1 do
+					local so = sobs:get(i);
+					local doIt = true;
+
+					if so:getContainer() ~= nil then
+						-- if container is locked with a padlock and we don't have the key, return
+						if instanceof(so, "IsoThumpable") then
+							print("thumpable");
+						end
+						if instanceof(so, "IsoThumpable") and so:isLockedByPadlock() and not getSpecificPlayer(0):getInventory():haveThisKey(so:getKeyId()) then
+							doIt = false;
+						end
+						if doIt then
+							local containerButton = ISButton:new(self.width-32, ((c-1)*32)+15, 32, 32, "", self, BCUIISInventoryPage.selectContainer, BCUIISInventoryPage.onBackpackMouseDown, true);
+							containerButton.anchorBottom = false;
+							containerButton:setOnMouseOverFunction(BCUIISInventoryPage.onMouseOverButton);
+							containerButton:setOnMouseOutFunction(BCUIISInventoryPage.onMouseOutButton);
+							containerButton.anchorRight = true;
+							containerButton.anchorTop = false;
+							containerButton.anchorLeft = false;
+							containerButton:initialise();
+							containerButton.borderColor.a = 0.0;
+							containerButton.backgroundColor.a = 0.0;
+							containerButton.backgroundColorMouseOver = {r=0.3, g=0.3, b=0.3, a=1.0};
+							containerButton.inventory = so:getContainer();
+							containerButton.capacity = so:getContainer():getMaxWeight();
+							if self.containerIconMaps[containerButton.inventory:getType()] ~= nil then
+								containerButton:setImage(self.containerIconMaps[containerButton.inventory:getType()]);
+							else
+								containerButton:setImage(self.conDefault);
+							end
+							containerButton:forceImageSize(30, 30)
+							containerButton.name = "";--getSpecificPlayer(0):getDescriptor():getForename().." "..getSpecificPlayer(0):getDescriptor():getSurname().."'s " .. item:getName();
+							if self.inventoryPane.inventory == containerButton.inventory then
+								containerButton.backgroundColor = {r=0.7, g=0.7, b=0.7, a=1.0};
+								foundIndex = c;
+								found = true;
+							end
+							if not containerButton.inventory:isExplored() then
+								if not isClient() then
+									ItemPicker.fillContainer(containerButton.inventory, 0)
+								else
+									containerButton.inventory:requestServerItemsForContainer();
+								end
+								containerButton.inventory:setExplored(true);
+							end
+							self:addChild(containerButton);
+							self.backpacks[c] = containerButton;
+							c = c + 1;
+						end
+					end
+				end
+
+				for i = 0, obs:size()-1 do
+					local o = obs:get(i);
+					local doIt = true;
+
+					if o:getContainer() ~= nil then
+						if doIt then
+							-- if container is locked with a padlock and we don't have the key, don't allow it to open
+							--                           if instanceof(o, "IsoThumpable") and ((o:isLockedByPadlock() and not getSpecificPlayer(0):getInventory():haveThisKeyId(o:getKeyId())) or o:getLockedByCode() > 0) then
+							----                               local containerImage = ISImage:new(self.width-32, ((c-1)*32)+15, 32, 32, getTexture("media/ui/Container_Crate.png"));
+							----                               if self.containerIconMaps[o:getContainer():getType()] ~= nil then
+							----                                   containerImage.texture = self.containerIconMaps[o:getContainer():getType()];
+							----                               end
+							----                               containerImage.textureOverride = getTexture("media/ui/lock.png");
+							----                               self:addChild(containerImage);
+							----                               c = c + 1;
+							--
+							--                               local containerButton = ISButton:new(self.width-32, ((c-1)*32)+15, 32, 32, "", self, nil, nil, true);
+							--                               containerButton.anchorBottom = false;
+							--                               containerButton.anchorRight = true;
+							--                               containerButton.anchorTop = false;
+							--                               containerButton.anchorLeft = false;
+							--                               containerButton:initialise();
+							--                               containerButton.borderColor.a = 0.0;
+							--                               containerButton.backgroundColor.a = 0.0;
+							--                               containerButton.backgroundColorMouseOver = {r=0.3, g=0.3, b=0.3, a=1.0};
+							--
+							--                               if self.containerIconMaps[o:getContainer():getType()] ~= nil then
+							--                                   containerButton:setImage(self.containerIconMaps[o:getContainer():getType()]);
+							--                               else
+							--                                   containerButton:setImage(self.conDefault);
+							--                               end
+							--                               containerButton:forceImageSize(30, 30)
+							--
+							--                               containerButton.textureOverride = getTexture("media/ui/lock.png");
+							--
+							--                               self:addChild(containerButton);
+							--                               self.backpacks[c] = containerButton;
+							-- else
+							local containerButton = nil;
+							if instanceof(o, "IsoThumpable") and ((o:isLockedByPadlock() and not getSpecificPlayer(0):getInventory():haveThisKeyId(o:getKeyId())) or o:getLockedByCode() > 0) then
+								containerButton = ISButton:new(self.width-32, ((c-1)*32)+15, 32, 32, "", self, nil,nil, true);
+								containerButton.textureOverride = getTexture("media/ui/lock.png");
+							else
+								containerButton = ISButton:new(self.width-32, ((c-1)*32)+15, 32, 32, "", self, BCUIISInventoryPage.selectContainer, BCUIISInventoryPage.onBackpackMouseDown, true);
+								containerButton:setOnMouseOverFunction(BCUIISInventoryPage.onMouseOverButton);
+								containerButton:setOnMouseOutFunction(BCUIISInventoryPage.onMouseOutButton);
+							end
+							containerButton.anchorBottom = false;
+							containerButton.anchorRight = true;
+							containerButton.anchorTop = false;
+							containerButton.anchorLeft = false;
+							containerButton:initialise();
+							containerButton.borderColor.a = 0.0;
+							containerButton.backgroundColor.a = 0.0;
+							containerButton.backgroundColorMouseOver = {r=0.3, g=0.3, b=0.3, a=1.0};
+							containerButton.inventory = o:getContainer();
+
+							if instanceof(o, "IsoThumpable") and o:isLockedByPadlock() and getSpecificPlayer(0):getInventory():haveThisKeyId(o:getKeyId()) then
+								containerButton.textureOverride = getTexture("media/ui/lockOpen.png");
+							end
+
+							containerButton.capacity = o:getContainer():getMaxWeight();
+							if self.containerIconMaps[containerButton.inventory:getType()] ~= nil then
+								containerButton:setImage(self.containerIconMaps[containerButton.inventory:getType()]);
+							else
+								containerButton:setImage(self.conDefault);
+							end
+							containerButton:forceImageSize(30, 30)
+							containerButton.name = "";--getSpecificPlayer(0):getDescriptor():getForename().." "..getSpecificPlayer(0):getDescriptor():getSurname().."'s " .. item:getName();
+							if self.inventoryPane.inventory == containerButton.inventory then
+								containerButton.backgroundColor = {r=0.7, g=0.7, b=0.7, a=1.0};
+								foundIndex = c;
+								found = true;
+							end
+							if not containerButton.inventory:isExplored() then
+
+								if not isClient() then
+									ItemPicker.fillContainer(containerButton.inventory, 0);
+								else
+									containerButton.inventory:requestServerItemsForContainer();
+								end
+
+								containerButton.inventory:setExplored(true);
+							end
+							self:addChild(containerButton);
+							self.backpacks[c] = containerButton;
+							c = c + 1;
+						end
+					end
+
+
+				end
+			end
+			-- }}} 
+		--]]
+	end
+end
+-- }}}
 function BCUIISInventoryPage:createChildren() -- {{{
 	local offx = (self.width  - 50) / 4;
 	local offy = (self.height - 50) / 4;
@@ -556,11 +907,15 @@ function BCUIISInventoryPage:updateInventory(force) -- {{{
 	if not self.dirty then return end;
 	self.dirty = false;
 
+	self:refreshBackpacks();
+
 	local allItems = {};
-	for i=0,self.inventory:getItems():size()-1 do
-		table.insert(allItems, self.inventory:getItems():get(i));
+	if self.inventory ~= nil then
+		for i=0,self.inventory:getItems():size()-1 do
+			table.insert(allItems, self.inventory:getItems():get(i));
+		end
+		table.sort(allItems, BCUIISInventoryPage.sortItems);
 	end
-	table.sort(allItems, BCUIISInventoryPage.sortItems);
 
 	for y=0,3 do
 		for x=0,3 do
@@ -740,8 +1095,14 @@ BCUIISInventoryPage.onKeyPressed = function(key) -- {{{
 			BCUI.inventoryPage = BCUIISInventoryPage:new(50, 50, getCore():getScreenWidth() / 2 - 50, getCore():getScreenHeight() - 100, getSpecificPlayer(0):getInventory(), true);
 			BCUI.inventoryPage:setVisible(true);
 			BCUI.inventoryPage:addToUIManager();
+
+			local x = BCUI.inventoryPage:getX() + BCUI.inventoryPage:getWidth();
+			BCUI.lootPage = BCUIISInventoryPage:new(x, 50, getCore():getScreenWidth() / 2 - 50, getCore():getScreenHeight() - 100, nil, false);
+			BCUI.lootPage:setVisible(true);
+			BCUI.lootPage:addToUIManager();
 		else
 			BCUI.inventoryPage:setVisible(not BCUI.inventoryPage:getIsVisible());
+			BCUI.lootPage:setVisible(not BCUI.lootPage:getIsVisible());
 		end
 	end
 end
@@ -749,11 +1110,12 @@ end
 
 -- Called when an object with a container is added/removed from the world.
 -- Added this to handle campfire containers.
--- BCUIISInventoryPage.OnContainerUpdate = function(object) -- {{{
-	-- BCUIISInventoryPage.dirtyUI()
--- end
-
+BCUIISInventoryPage.OnContainerUpdate = function(object) -- {{{
+	if BCUI.inventoryPage ~= nil then
+		BCUI.inventoryPage:updateInventory(true);
+		BCUI.lootPage:updateInventory(true);
+	end
+end
+-- }}}
 Events.OnKeyPressed.Add(BCUIISInventoryPage.onKeyPressed);
--- Events.OnContainerUpdate.Add(BCUIISInventoryPage.OnContainerUpdate)
-
---Events.OnCreateUI.Add(testInventory);
+Events.OnContainerUpdate.Add(BCUIISInventoryPage.OnContainerUpdate)
