@@ -44,6 +44,12 @@ function ISInventoryTransferAction:perform() -- {{{
 end
 -- }}}
 
+HotBar.MainOptionsOnResolutionChange = MainOptions.onResolutionChange;
+function MainOptions:onResolutionChange(oldw, oldh, neww, newh)
+	HotBar.MainOptionsOnResolutionChange(self, oldw, oldh, neww, newh);
+	HotBar.ReInit()
+end
+
 HotBarISInventoryItem = ISPanel:derive("HotBarISInventoryItem");
 function HotBarISInventoryItem:new (x, y, width, height, parent, object, slot) -- {{{
 	local o = {}
@@ -113,8 +119,8 @@ end
 
 HotBarISInventoryPage = ISPanel:derive("HotBarISInventoryPage");
 function HotBarISInventoryPage:createChildren() -- {{{
-	local offx = (self.width) / 10;
-	for x=0,9 do
+	local offx = (self.width) / self.numSlots;
+	for x=0,self.numSlots-1 do
 		self:addChild(HotBarISInventoryItem:new(offx * x + 5, 5, offx - 10, self.height - 10, self, self.items[x], x));
 	end
 end
@@ -135,7 +141,7 @@ function HotBarISInventoryPage:updateInventory(force) -- {{{
 		count[item:getFullType()] = count[item:getFullType()] + 1;
 	end
 
-	for i=0,9 do
+	for i=0,self.numSlots-1 do
 		if self.items[i].item ~= nil then
 			if count[self.items[i].item] ~= nil then
 				self.items[i].count = count[self.items[i].item]
@@ -180,30 +186,33 @@ function HotBarISInventoryPage:new (x, y, width, height, player) -- {{{
 	o.player = player;
 	o.width = width;
 	o.dirty = true;
+	o.numSlots = 10;
+	o.items = {};
 
-	o.items = { -- {{{
-		[0] = { item = nil, count = 0, texture = nil },
-		[1] = { item = nil, count = 0, texture = nil },
-		[2] = { item = nil, count = 0, texture = nil },
-		[3] = { item = nil, count = 0, texture = nil },
-		[4] = { item = nil, count = 0, texture = nil },
-		[5] = { item = nil, count = 0, texture = nil },
-		[6] = { item = nil, count = 0, texture = nil },
-		[7] = { item = nil, count = 0, texture = nil },
-		[8] = { item = nil, count = 0, texture = nil },
-		[9] = { item = nil, count = 0, texture = nil },
-	}; -- }}}
+	options = getFileReader("hotbar_numslots.txt", false);
+	line = options:readLine();
+	print("line: "..tostring(line));
+	if tostring(line) ~= nil then
+		o.numSlots = tonumber(line);
+		options:close();
+	end
+	for i=0,o.numSlots-1 do
+		o.items[i] = { item = nil, count = 0, texture = nil };
+	end
 
 	local options = getFileReader("hotbar_items.txt", true);
 	local i = 0;
 	line = options:readLine();
-	while line ~= nil and i < 10 do
+	while line ~= nil and i < o.numSlots do
 		if line == "nil" then line = nil end;
 		o.items[i].item = line;
 		line = options:readLine();
 		i = i + 1;
 	end
 	options:close();
+
+	o:setWidth(height * o.numSlots);
+	o:setX((getCore():getScreenWidth() - height * o.numSlots) / 2);
 	return o
 end
 -- }}}
@@ -217,16 +226,14 @@ end
 HotBar.Toggle = function() -- {{{
 	local size = 75;
 
-	local options = getFileReader("hotbar_size.txt", true);
+	local options = getFileReader("hotbar_size.txt", false);
 	if options ~= nil then
 		size = tonumber(options:readLine());
 		options:close();
 	end
 
-	local width = (size * 10);
-
 	if HotBar.inventoryPage == nil then
-		HotBar.inventoryPage = HotBarISInventoryPage:new((getCore():getScreenWidth() - width) / 2, getCore():getScreenHeight()-size, width, size, 0);
+		HotBar.inventoryPage = HotBarISInventoryPage:new(0, getCore():getScreenHeight()-size, 0, size, 0); -- x and width now set in constructor
 		HotBar.inventoryPage:setVisible(true);
 		HotBar.inventoryPage:addToUIManager();
 	else
@@ -270,7 +277,7 @@ HotBar.FillContextMenu = function(player, context, items) -- {{{
 	local buildOption = context:addOption(getText("UI_Hotbar"), item, nil);
 	context:addSubMenu(buildOption, subMenu);
 
-	for i=0,9 do
+	for i=0,HotBar.inventoryPage.numSlots-1 do
 		if HotBar.inventoryPage.items[i].item == nil then
 			subMenu:addOption(getText("UI_HotBarPutItemInSlot", item:getName(), i), item:getFullType(), HotBar.PutItemInSlot, i);
 		else
@@ -289,7 +296,7 @@ HotBar.PutItemInSlot = function(item, slot) -- {{{
 	HotBar.inventoryPage:updateInventory(true);
 
 	local options = getFileWriter("hotbar_items.txt", true, false); -- overwrite
-	for i=0,9 do
+	for i=0,HotBar.inventoryPage.numSlots-1 do
 		options:write(tostring(HotBar.inventoryPage.items[i].item).."\n");
 	end
 	options:close();

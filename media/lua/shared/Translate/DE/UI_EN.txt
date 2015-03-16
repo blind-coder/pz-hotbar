@@ -4,5 +4,6 @@ UI_DE = {
 	UI_HotBarReplaceItemInSlotWithItem = "Ersetze %1 an position %2 mit %3",
 	UI_optionscreen_binding_Hotbar = "Hotbar (Schnellzugriffsleiste)",
 	UI_optionscreen_binding_Toggle_Hotbar = "Sichtbarkeit umschalten",
-	UI_optionscreen_hotbar_change_size = "Groesse der Leiste"
+	UI_optionscreen_hotbar_change_size = "Groesse der Leiste",
+	UI_optionscreen_hotbar_num_slots = "Anzahl Slots"
 }
