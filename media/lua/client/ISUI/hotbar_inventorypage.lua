@@ -11,8 +11,8 @@ require "defines"
 
 HotBar = {};
 HotBar.dump = function(o, lvl) -- {{{ Small function to dump an object.
-	if lvl == nil then lvl = 0 end
-	if lvl >= 10 then return "SO ("..tostring(o)..")" end
+	if lvl == nil then lvl = 5 end
+	if lvl < 0 then return "SO ("..tostring(o)..")" end
 
 	if type(o) == 'table' then
 		local s = '{ '
@@ -21,7 +21,7 @@ HotBar.dump = function(o, lvl) -- {{{ Small function to dump an object.
 				s = s .. '['..k..'] = '..tostring(v);
 			else
 				if type(k) ~= 'number' then k = '"'..k..'"' end
-				s = s .. '['..k..'] = ' .. HotBar.dump(v, lvl + 1) .. ',\n'
+				s = s .. '['..k..'] = ' .. HotBar.dump(v, lvl - 1) .. ',\n'
 			end
 		end
 		return s .. '}\n'
@@ -45,10 +45,11 @@ end
 -- }}}
 
 HotBar.MainOptionsOnResolutionChange = MainOptions.onResolutionChange;
-function MainOptions:onResolutionChange(oldw, oldh, neww, newh)
+function MainOptions:onResolutionChange(oldw, oldh, neww, newh) -- {{{
 	HotBar.MainOptionsOnResolutionChange(self, oldw, oldh, neww, newh);
 	HotBar.ReInit()
 end
+-- }}}
 
 HotBarISInventoryItem = ISPanel:derive("HotBarISInventoryItem");
 function HotBarISInventoryItem:new (x, y, width, height, parent, object, slot) -- {{{
@@ -80,6 +81,10 @@ function HotBarISInventoryItem:onRightMouseUp(x, y) -- {{{
 	table.insert(items, getSpecificPlayer(self.parent.player):getInventory():FindAndReturn(self.object.item));
 
 	ISInventoryPaneContextMenu.createMenu(self.parent.player, true, items, self:getAbsoluteX()+x, self:getAbsoluteY()+y)
+end
+-- }}}
+function HotBarISInventoryItem:onMouseUp(x, y) -- {{{
+	self.parent:onMouseUp(self:getX() + x, self:getY() + y);
 end
 -- }}}
 function HotBarISInventoryItem:createChildren() -- {{{
@@ -119,9 +124,10 @@ end
 
 HotBarISInventoryPage = ISPanel:derive("HotBarISInventoryPage");
 function HotBarISInventoryPage:createChildren() -- {{{
-	local offx = (self.width) / self.numSlots;
+	local offx = self.width / self.numSlots;
+	self.slots = {};
 	for x=0,self.numSlots-1 do
-		self:addChild(HotBarISInventoryItem:new(offx * x + 5, 5, offx - 10, self.height - 10, self, self.items[x], x));
+		self.slots[x] = self:addChild(HotBarISInventoryItem:new(offx * x + 5, 5, offx - 10, self.height - 10, self, self.items[x], x));
 	end
 end
 -- }}}
@@ -157,6 +163,33 @@ function HotBarISInventoryPage:updateInventory(force) -- {{{
 
 	self.dirty = false;
 end -- }}}
+function HotBarISInventoryPage:onMouseUp(x, y) -- {{{
+	if ISMouseDrag.dragging == nil then return end;
+	local items = {};
+	for i,v in ipairs(ISMouseDrag.dragging) do
+		if instanceof(v, "InventoryItem") then
+			table.insert(items, v:getFullType());
+		else
+			table.insert(items, v.items[1]:getFullType());
+		end
+	end
+	table.sort(items);
+	
+	local lastItem = "";
+	local i = 1;
+	local s = math.floor(x / (self.width / self.numSlots + 5));
+	for s=s,self.numSlots-1 do
+		if items[i] ~= nil then
+			if lastItem ~= items[i] then
+				HotBar.PutItemInSlot(items[i], s);
+			end
+			lastItem = items[i]; -- prevent duplicates
+		end
+		i = i + 1;
+	end
+end
+-- }}}
+
 function HotBarISInventoryPage:prerender() -- {{{
 	self:drawRect(0, 0, self:getWidth(), self:getHeight(), self.backgroundColor.a, self.backgroundColor.r, self.backgroundColor.g, self.backgroundColor.b);
 	self:drawRectBorder(0, 0, self:getWidth(), 16, self.borderColor.a, self.borderColor.r, self.borderColor.g, self.borderColor.b);
@@ -168,7 +201,6 @@ function HotBarISInventoryPage:render() -- {{{
 	self:drawRectBorder(0, 0, self:getWidth(), self:getHeight(), self.borderColor.a, self.borderColor.r, self.borderColor.g, self.borderColor.b);
 end
 -- }}}
-
 function HotBarISInventoryPage:new (x, y, width, height, player) -- {{{
 	local o = {}
 	o = ISPanel:new(x, y, width, height);
@@ -302,14 +334,6 @@ HotBar.PutItemInSlot = function(item, slot) -- {{{
 	options:close();
 end
 -- }}}
---[[
-HotBar.DropItemInSlot = function(slot) -- {{{
-	local player = HotBar.inventoryPage.player;
-	local item = getSpecificPlayer(player):getInventory():FindAndReturn(HotBar.inventoryPage.items[i].item);
-	ISInventoryPaneContextMenu.dropItem(item, player);
-end
--- }}}
---]]
 
 Events.OnKeyPressed.Add(HotBarISInventoryPage.onKeyPressed);
 Events.OnContainerUpdate.Add(HotBarISInventoryPage.OnContainerUpdate);
