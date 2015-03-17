@@ -48,7 +48,6 @@ MainOptions.create = function(self)
 			local x = self:getWidth() / 2;
 			local h = 20;
 			local w = self:getWidth() / 4;
-			print (w.." = ("..self:getWidth().." - ("..x.."+50)) / 2");
 
 			local options = getFileReader("hotbar_size.txt", false);
 			local size = 75;

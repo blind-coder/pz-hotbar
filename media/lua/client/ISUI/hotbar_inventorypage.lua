@@ -222,26 +222,30 @@ function HotBarISInventoryPage:new (x, y, width, height, player) -- {{{
 	o.items = {};
 
 	options = getFileReader("hotbar_numslots.txt", false);
-	line = options:readLine();
-	print("line: "..tostring(line));
-	if tostring(line) ~= nil then
-		o.numSlots = tonumber(line);
+	if options ~= nil then
+		local line = options:readLine();
+		if tostring(line) ~= nil then
+			o.numSlots = tonumber(line);
+		end
 		options:close();
 	end
+
 	for i=0,o.numSlots-1 do
 		o.items[i] = { item = nil, count = 0, texture = nil };
 	end
 
 	local options = getFileReader("hotbar_items.txt", true);
-	local i = 0;
-	line = options:readLine();
-	while line ~= nil and i < o.numSlots do
-		if line == "nil" then line = nil end;
-		o.items[i].item = line;
+	if options ~= nil then
+		local i = 0;
 		line = options:readLine();
-		i = i + 1;
+		while line ~= nil and i < o.numSlots do
+			if line == "nil" then line = nil end;
+			o.items[i].item = line;
+			line = options:readLine();
+			i = i + 1;
+		end
+		options:close();
 	end
-	options:close();
 
 	o:setWidth(height * o.numSlots);
 	o:setX((getCore():getScreenWidth() - height * o.numSlots) / 2);
