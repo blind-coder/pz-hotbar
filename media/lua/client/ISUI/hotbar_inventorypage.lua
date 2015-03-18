@@ -91,7 +91,7 @@ function HotBarISInventoryItem:createChildren() -- {{{
 	--self.drop = ISButton:new(0, self:getHeight() - 10, self:getWidth() / 2, 10, "Drop", self.slot, HotBar.DropItemInSlot)
 	--self:addChild(self.drop);
 
-	self.clear = ISButton:new(0, self:getHeight() - 10, self:getWidth(), 10, "Clear", self.slot, HotBar.ClearSlot)
+	self.clear = ISButton:new(0, self:getHeight() - 10, self:getWidth(), 10, getText("UI_Clear"), self.slot, HotBar.ClearSlot)
 	self:addChild(self.clear);
 end
 -- }}}

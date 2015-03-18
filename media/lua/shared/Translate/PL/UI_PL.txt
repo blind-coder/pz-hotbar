@@ -1,0 +1,10 @@
+UI_PL = {
+	UI_Hotbar = "Pasek przedmiotów",
+	UI_HotBarPutItemInSlot = "Umieœæ %1 w miejsce %2",
+	UI_HotBarReplaceItemInSlotWithItem = "Zamieñ miejscami %1 w miejscu %2 z %3",
+	UI_optionscreen_binding_Hotbar = "Pasek przedmiotów (pasek szybkiego dostêpu)",
+	UI_optionscreen_binding_Toggle_Hotbar = "W³/wy³ pasek",
+	UI_optionscreen_hotbar_change_size = "Rozmiar paska",
+	UI_optionscreen_hotbar_num_slots = "Iloœæ miejsca",
+	UI_Clear = "Usuwa¿"
+}
