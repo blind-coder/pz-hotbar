@@ -6,5 +6,5 @@ UI_PL = {
 	UI_optionscreen_binding_Toggle_Hotbar = "W³/wy³ pasek",
 	UI_optionscreen_hotbar_change_size = "Rozmiar paska",
 	UI_optionscreen_hotbar_num_slots = "Iloœæ miejsca",
-	UI_Clear = "Usuwa¿"
+	UI_Clear = "Usuñ"
 }
