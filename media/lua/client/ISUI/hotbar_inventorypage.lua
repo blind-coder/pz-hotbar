@@ -168,12 +168,13 @@ function HotBarISInventoryPage:onMouseUp(x, y) -- {{{
 	local items = {};
 	for i,v in ipairs(ISMouseDrag.dragging) do
 		if instanceof(v, "InventoryItem") then
-			table.insert(items, v:getFullType());
+			table.insert(items, v);
 		else
-			table.insert(items, v.items[1]:getFullType());
+			table.insert(items, v.items[1]);
 		end
 	end
-	table.sort(items);
+	-- table.sort(items);
+	-- TODO
 	
 	local lastItem = "";
 	local i = 1;
@@ -315,10 +316,10 @@ HotBar.FillContextMenu = function(player, context, items) -- {{{
 
 	for i=0,HotBar.inventoryPage.numSlots-1 do
 		if HotBar.inventoryPage.items[i].item == nil then
-			subMenu:addOption(getText("UI_HotBarPutItemInSlot", item:getName(), i), item:getFullType(), HotBar.PutItemInSlot, i);
+			subMenu:addOption(getText("UI_HotBarPutItemInSlot", item:getName(), i), item, HotBar.PutItemInSlot, i);
 		else
 			local name = InventoryItemFactory.CreateItem(HotBar.inventoryPage.items[i].item):getName();
-			subMenu:addOption(getText("UI_HotBarReplaceItemInSlotWithItem", name, i, item:getName()), item:getFullType(), HotBar.PutItemInSlot, i);
+			subMenu:addOption(getText("UI_HotBarReplaceItemInSlotWithItem", name, i, item:getName()), item, HotBar.PutItemInSlot, i);
 		end
 	end
 end
@@ -328,6 +329,13 @@ HotBar.ClearSlot = function(slot) -- {{{
 end
 -- }}}
 HotBar.PutItemInSlot = function(item, slot) -- {{{
+	if instanceof(item, "InventoryContainer") then
+		item = "special:hotBar"..tostring(slot);
+		item:getModData()["hotBarSlot"] = tostring(slot);
+	elseif item ~= nil then
+		item = item:getFullType();
+	end
+
 	HotBar.inventoryPage.items[slot].item = item;
 	HotBar.inventoryPage:updateInventory(true);
 
