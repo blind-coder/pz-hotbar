@@ -109,7 +109,12 @@ function HotBarISInventoryItem:render() -- {{{
 	local alpha = 0.3;
 
 	if self.object.count > 0 then
-		texture = getSpecificPlayer(self.parent.player):getInventory():FindAndReturn(self.object.item):getTex();
+		if texture == nil then
+			local i = getSpecificPlayer(self.parent.player):getInventory():FindAndReturn(self.object.item);
+			if i ~= nil then
+				texture = i:getTex();
+			end
+		end
 		--self.drop:setVisible(true);
 		alpha = 1;
 	end
