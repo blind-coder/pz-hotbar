@@ -1,4 +1,8 @@
 name=blindcoders Hotbar
 poster=empty.png
-description=A small hotbar for 10 often-used items
+description=A small hotbar for 5-20 often-used items
 id=hotbar
+url=http://theindiestone.com/forums/index.php/topic/13356-hotbar-for-quick-item-access
+modversion=0.3.3
+pzversion=32.16
+versionurl=https://raw.githubusercontent.com/blind-coder/pz-hotbar/master/mod.info
