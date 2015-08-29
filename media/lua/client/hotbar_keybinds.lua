@@ -15,6 +15,17 @@ end
 table.insert(keyBinding, {value="[Hotbar]"}) -- adds a section header to keys.ini and the options screen
 addBind("Toggle_Hotbar", 15) -- Tab
 
+addBind("Slot0", 0)
+addBind("Slot1", 0)
+addBind("Slot2", 0)
+addBind("Slot3", 0)
+addBind("Slot4", 0)
+addBind("Slot5", 0)
+addBind("Slot6", 0)
+addBind("Slot7", 0)
+addBind("Slot8", 0)
+addBind("Slot9", 0)
+
 function HotBarKeyBinds.SizeChanged(_, box)
 	if box.options[box.selected] ~= nil then
 		local choices = { 100, 75, 50 };

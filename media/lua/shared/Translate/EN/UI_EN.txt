@@ -6,5 +6,15 @@ UI_EN = {
 	UI_optionscreen_binding_Toggle_Hotbar = "Toggle hotbar",
 	UI_optionscreen_hotbar_change_size = "Size of Hotbar",
 	UI_optionscreen_hotbar_num_slots = "Num slots",
+	UI_optionscreen_binding_Slot0 = "Slot 1",
+	UI_optionscreen_binding_Slot1 = "Slot 2",
+	UI_optionscreen_binding_Slot2 = "Slot 3",
+	UI_optionscreen_binding_Slot3 = "Slot 4",
+	UI_optionscreen_binding_Slot4 = "Slot 5",
+	UI_optionscreen_binding_Slot5 = "Slot 6",
+	UI_optionscreen_binding_Slot6 = "Slot 7",
+	UI_optionscreen_binding_Slot7 = "Slot 8",
+	UI_optionscreen_binding_Slot8 = "Slot 9",
+	UI_optionscreen_binding_Slot9 = "Slot 10",
 	UI_Clear = "Clear"
 }

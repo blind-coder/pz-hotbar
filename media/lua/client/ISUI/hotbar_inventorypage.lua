@@ -194,6 +194,20 @@ function HotBarISInventoryPage:onMouseUp(x, y) -- {{{
 	end
 end
 -- }}}
+function HotBar.ActivateSlot(i)
+	if HotBar.inventoryPage.items[i] ~= nil then
+		local item = getPlayer():getInventory():FindAndReturn(HotBar.inventoryPage.items[i].item);
+		if not item then return end;
+		local primary = true;
+		local twohanded = false;
+		if instanceof(item, "HandWeapon") then
+			twohanded = item:isTwoHandWeapon()
+		else
+			primary = false;
+		end
+		ISTimedActionQueue.add(ISEquipWeaponAction:new(getPlayer(), item, 50, primary, twohanded));
+	end
+end
 
 function HotBarISInventoryPage:prerender() -- {{{
 	self:drawRect(0, 0, self:getWidth(), self:getHeight(), self.backgroundColor.a, self.backgroundColor.r, self.backgroundColor.g, self.backgroundColor.b);
@@ -261,6 +275,12 @@ end
 HotBarISInventoryPage.onKeyPressed = function(key) -- {{{
 	if key == getCore():getKey("Toggle_Hotbar") and getSpecificPlayer(0) and getGameSpeed() > 0 then
 		HotBar.Toggle();
+	end
+
+	for i=0,9 do
+		if key == getCore():getKey("Slot"..i) and getSpecificPlayer(0) and getGameSpeed() > 0 then
+			HotBar.ActivateSlot(i);
+		end
 	end
 end
 -- }}}
