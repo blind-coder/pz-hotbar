@@ -194,7 +194,7 @@ function HotBarISInventoryPage:onMouseUp(x, y) -- {{{
 	end
 end
 -- }}}
-function HotBar.ActivateSlot(i)
+function HotBar.ActivateSlot(i) -- {{{
 	if HotBar.inventoryPage.items[i] ~= nil then
 		local item = getPlayer():getInventory():FindAndReturn(HotBar.inventoryPage.items[i].item);
 		if not item then return end;
@@ -208,6 +208,7 @@ function HotBar.ActivateSlot(i)
 		ISTimedActionQueue.add(ISEquipWeaponAction:new(getPlayer(), item, 50, primary, twohanded));
 	end
 end
+-- }}}
 
 function HotBarISInventoryPage:prerender() -- {{{
 	self:drawRect(0, 0, self:getWidth(), self:getHeight(), self.backgroundColor.a, self.backgroundColor.r, self.backgroundColor.g, self.backgroundColor.b);
