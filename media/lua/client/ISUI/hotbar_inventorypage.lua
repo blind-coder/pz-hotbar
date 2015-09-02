@@ -182,7 +182,7 @@ function HotBarISInventoryPage:onMouseUp(x, y) -- {{{
 	
 	local lastItem = "";
 	local i = 1;
-	local s = math.floor(x / (self.width / self.numSlots + 5));
+	local s = math.floor(x / (self.width / self.numSlots));
 	for s=s,self.numSlots-1 do
 		if items[i] ~= nil then
 			if lastItem ~= items[i] then
