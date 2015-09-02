@@ -341,7 +341,7 @@ HotBar.FillContextMenu = function(player, context, items) -- {{{
 	local buildOption = context:addOption(getText("UI_Hotbar"), item, nil);
 	context:addSubMenu(buildOption, subMenu);
 
-	for i=0,HotBar.inventoryPage.numSlots-1 do
+	for i=0,HotBar.config.main.numSlots-1 do
 		if HotBar.inventoryPage.items[i].item == nil then
 			subMenu:addOption(getText("UI_HotBarPutItemInSlot", item:getName(), i+1), item:getFullType(), HotBar.PutItemInSlot, i);
 		else
