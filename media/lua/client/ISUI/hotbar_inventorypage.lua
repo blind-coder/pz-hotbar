@@ -6,34 +6,64 @@ require "ISUI/ISResizeWidget"
 require "ISUI/ISMouseDrag"
 require "ISUI/ISLayoutManager"
 require "TimedActions/ISInventoryTransferAction"
+require "bcUtils"
 
 require "defines"
 
 HotBar = {};
-HotBar.dump = function(o, lvl) -- {{{ Small function to dump an object.
-	if lvl == nil then lvl = 5 end
-	if lvl < 0 then return "SO ("..tostring(o)..")" end
+HotBar.config = {};
+HotBar.loadConfig = function()--{{{
+	HotBar.config.main = {};
+	HotBar.config.items = {};
 
-	if type(o) == 'table' then
-		local s = '{ '
-		for k,v in pairs(o) do
-			if k == "prev" or k == "next" then
-				s = s .. '['..k..'] = '..tostring(v);
-			else
-				if type(k) ~= 'number' then k = '"'..k..'"' end
-				s = s .. '['..k..'] = ' .. HotBar.dump(v, lvl - 1) .. ',\n'
-			end
+	local ini = bcUtils.readINI("hotbar.ini");
+	if not bcUtils.tableIsEmpty(ini) then
+		if not ini.main then ini.main = {} end
+		if not ini.items then ini.items = {} end -- safeguard
+		HotBar.config.main.numSlots = tonumber(ini.main.numSlots or "10");
+		HotBar.config.main.size = tonumber(ini.main.size or "75");
+		for k,v in pairs(ini.items) do
+			HotBar.config.items[tonumber(k)] = v;
 		end
-		return s .. '}\n'
-	else
-		return tostring(o)
+		return;
 	end
+
+	local fd = getFileReader("hotbar_size.txt", false);
+	if fd ~= nil then
+		HotBar.config.main.size = tonumber(fd:readLine());
+		fd:close();
+	else
+		HotBar.config.main.size = 75;
+	end
+
+	fd = getFileReader("hotbar_numslots.txt", false);
+	if fd ~= nil then
+		HotBar.config.main.numSlots = tonumber(fd:readLine());
+		fd:close();
+	else
+		HotBar.config.main.numSlots = 10;
+	end
+
+	fd = getFileReader("hotbar_items.txt", true);
+	if fd ~= nil then
+		local i = 0;
+		line = fd:readLine();
+		while line ~= nil and i < HotBar.config.main.numSlots do
+			if line == "nil" then line = nil end;
+			HotBar.config.items[i] = line;
+			line = fd:readLine();
+			i = i + 1;
+		end
+		fd:close();
+	end
+
+	HotBar.saveConfig();
 end
--- }}}
-HotBar.pline = function (text) -- {{{ Print text to logfile
-	print(tostring(text));
+--}}}
+HotBar.saveConfig = function()--{{{
+	bcUtils.writeINI("hotbar.ini", HotBar.config);
 end
--- }}}
+--}}}
 
 HotBar.ISInventoryTransferActionPerform = ISInventoryTransferAction.perform;
 function ISInventoryTransferAction:perform() -- {{{
@@ -129,9 +159,9 @@ end
 
 HotBarISInventoryPage = ISPanel:derive("HotBarISInventoryPage");
 function HotBarISInventoryPage:createChildren() -- {{{
-	local offx = self.width / self.numSlots;
+	local offx = self.width / HotBar.config.main.numSlots;
 	self.slots = {};
-	for x=0,self.numSlots-1 do
+	for x=0,HotBar.config.main.numSlots-1 do
 		self.slots[x] = self:addChild(HotBarISInventoryItem:new(offx * x + 5, 5, offx - 10, self.height - 10, self, self.items[x], x));
 	end
 end
@@ -152,7 +182,7 @@ function HotBarISInventoryPage:updateInventory(force) -- {{{
 		count[item:getFullType()] = count[item:getFullType()] + 1;
 	end
 
-	for i=0,self.numSlots-1 do
+	for i=0,HotBar.config.main.numSlots-1 do
 		if self.items[i].item ~= nil then
 			if count[self.items[i].item] ~= nil then
 				self.items[i].count = count[self.items[i].item]
@@ -182,8 +212,8 @@ function HotBarISInventoryPage:onMouseUp(x, y) -- {{{
 	
 	local lastItem = "";
 	local i = 1;
-	local s = math.floor(x / (self.width / self.numSlots));
-	for s=s,self.numSlots-1 do
+	local s = math.floor(x / (self.width / HotBar.config.main.numSlots));
+	for s=s,HotBar.config.main.numSlots-1 do
 		if items[i] ~= nil then
 			if lastItem ~= items[i] then
 				HotBar.PutItemInSlot(items[i], s);
@@ -238,37 +268,17 @@ function HotBarISInventoryPage:new (x, y, width, height, player) -- {{{
 	o.player = player;
 	o.width = width;
 	o.dirty = true;
-	o.numSlots = 10;
 	o.items = {};
 
-	options = getFileReader("hotbar_numslots.txt", false);
-	if options ~= nil then
-		local line = options:readLine();
-		if tostring(line) ~= nil then
-			o.numSlots = tonumber(line);
-		end
-		options:close();
+	HotBar.loadConfig();
+
+	for i=0,HotBar.config.main.numSlots-1 do
+		o.items[i] = {};
+		o.items[i].item = HotBar.config.items[i];
 	end
 
-	for i=0,o.numSlots-1 do
-		o.items[i] = { item = nil, count = 0, texture = nil };
-	end
-
-	local options = getFileReader("hotbar_items.txt", true);
-	if options ~= nil then
-		local i = 0;
-		line = options:readLine();
-		while line ~= nil and i < o.numSlots do
-			if line == "nil" then line = nil end;
-			o.items[i].item = line;
-			line = options:readLine();
-			i = i + 1;
-		end
-		options:close();
-	end
-
-	o:setWidth(height * o.numSlots);
-	o:setX((getCore():getScreenWidth() - height * o.numSlots) / 2);
+	o:setWidth(height * HotBar.config.main.numSlots);
+	o:setX((getCore():getScreenWidth() - height * HotBar.config.main.numSlots) / 2);
 	return o
 end
 -- }}}
@@ -286,16 +296,8 @@ HotBarISInventoryPage.onKeyPressed = function(key) -- {{{
 end
 -- }}}
 HotBar.Toggle = function() -- {{{
-	local size = 75;
-
-	local options = getFileReader("hotbar_size.txt", false);
-	if options ~= nil then
-		size = tonumber(options:readLine());
-		options:close();
-	end
-
 	if HotBar.inventoryPage == nil then
-		HotBar.inventoryPage = HotBarISInventoryPage:new(0, getCore():getScreenHeight()-size, 0, size, 0); -- x and width now set in constructor
+		HotBar.inventoryPage = HotBarISInventoryPage:new(0, getCore():getScreenHeight()-HotBar.config.main.size, 0, HotBar.config.main.size, 0); -- x and width now set in constructor
 		HotBar.inventoryPage:setVisible(true);
 		HotBar.inventoryPage:addToUIManager();
 	else
@@ -357,11 +359,8 @@ HotBar.PutItemInSlot = function(item, slot) -- {{{
 	HotBar.inventoryPage.items[slot].item = item;
 	HotBar.inventoryPage:updateInventory(true);
 
-	local options = getFileWriter("hotbar_items.txt", true, false); -- overwrite
-	for i=0,HotBar.inventoryPage.numSlots-1 do
-		options:write(tostring(HotBar.inventoryPage.items[i].item).."\n");
-	end
-	options:close();
+	HotBar.config.items[slot] = item;
+	HotBar.saveConfig();
 end
 -- }}}
 
