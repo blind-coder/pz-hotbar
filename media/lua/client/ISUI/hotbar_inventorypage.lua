@@ -279,7 +279,7 @@ HotBarISInventoryPage.onKeyPressed = function(key) -- {{{
 	end
 
 	for i=0,9 do
-		if key == getCore():getKey("Slot"..i) and getSpecificPlayer(0) and getGameSpeed() > 0 then
+		if key == getCore():getKey("Slot"..(i+1)) and getSpecificPlayer(0) and getGameSpeed() > 0 then
 			HotBar.ActivateSlot(i);
 		end
 	end
@@ -341,10 +341,10 @@ HotBar.FillContextMenu = function(player, context, items) -- {{{
 
 	for i=0,HotBar.inventoryPage.numSlots-1 do
 		if HotBar.inventoryPage.items[i].item == nil then
-			subMenu:addOption(getText("UI_HotBarPutItemInSlot", item:getName(), i), item:getFullType(), HotBar.PutItemInSlot, i);
+			subMenu:addOption(getText("UI_HotBarPutItemInSlot", item:getName(), i+1), item:getFullType(), HotBar.PutItemInSlot, i);
 		else
 			local name = InventoryItemFactory.CreateItem(HotBar.inventoryPage.items[i].item):getName();
-			subMenu:addOption(getText("UI_HotBarReplaceItemInSlotWithItem", name, i, item:getName()), item:getFullType(), HotBar.PutItemInSlot, i);
+			subMenu:addOption(getText("UI_HotBarReplaceItemInSlotWithItem", name, i+1, item:getName()), item:getFullType(), HotBar.PutItemInSlot, i);
 		end
 	end
 end
