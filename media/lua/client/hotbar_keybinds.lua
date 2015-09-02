@@ -26,7 +26,7 @@ addBind("Slot9", 0)
 addBind("Slot10", 0)
 addBind("Toggle_Hotbar", 15) -- Tab
 
-function HotBarKeyBinds.SizeChanged(_, box)
+function HotBarKeyBinds.SizeChanged(_, box)--{{{
 	if box.options[box.selected] ~= nil then
 		local choices = { 100, 75, 50 };
 		local options = getFileWriter("hotbar_size.txt", true, false); -- overwrite
@@ -37,8 +37,8 @@ function HotBarKeyBinds.SizeChanged(_, box)
 		end
 	end
 end
-
-function HotBarKeyBinds.NumSlotsChanged(_, box)
+--}}}
+function HotBarKeyBinds.NumSlotsChanged(_, box)--{{{
 	if box.options[box.selected] ~= nil then
 		local choices = { 5, 10, 15, 20, 25, 30 };
 		local options = getFileWriter("hotbar_numslots.txt", true, false); -- overwrite
@@ -49,6 +49,7 @@ function HotBarKeyBinds.NumSlotsChanged(_, box)
 		end
 	end
 end
+--}}}
 
 HotBarKeyBinds.MainOptionsCreate = MainOptions.create;
 MainOptions.create = function(self)
