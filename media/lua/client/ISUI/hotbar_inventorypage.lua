@@ -12,16 +12,23 @@ require "defines"
 
 HotBar = {};
 HotBar.config = {};
+HotBar.items = {};
+HotBar.config.main = {};
+HotBar.config.main.numSlots = 10;
+HotBar.config.main.size = 75;
+
 HotBar.loadConfig = function()--{{{
 	HotBar.config.main = {};
+	HotBar.config.main.numSlots = 10;
+	HotBar.config.main.size = 75;
 	HotBar.config.items = {};
 
 	local ini = bcUtils.readINI("hotbar.ini");
 	if not bcUtils.tableIsEmpty(ini) then
 		if not ini.main then ini.main = {} end
 		if not ini.items then ini.items = {} end -- safeguard
-		HotBar.config.main.numSlots = tonumber(ini.main.numSlots or "10");
-		HotBar.config.main.size = tonumber(ini.main.size or "75");
+		HotBar.config.main.numSlots = tonumber(ini.main.numSlots) or 10;
+		HotBar.config.main.size = tonumber(ini.main.size) or 75;
 		for k,v in pairs(ini.items) do
 			HotBar.config.items[tonumber(k)] = v;
 		end
@@ -30,7 +37,7 @@ HotBar.loadConfig = function()--{{{
 
 	local fd = getFileReader("hotbar_size.txt", false);
 	if fd ~= nil then
-		HotBar.config.main.size = tonumber(fd:readLine());
+		HotBar.config.main.size = tonumber(fd:readLine()) or 75;
 		fd:close();
 	else
 		HotBar.config.main.size = 75;
@@ -38,7 +45,7 @@ HotBar.loadConfig = function()--{{{
 
 	fd = getFileReader("hotbar_numslots.txt", false);
 	if fd ~= nil then
-		HotBar.config.main.numSlots = tonumber(fd:readLine());
+		HotBar.config.main.numSlots = tonumber(fd:readLine()) or 10;
 		fd:close();
 	else
 		HotBar.config.main.numSlots = 10;
