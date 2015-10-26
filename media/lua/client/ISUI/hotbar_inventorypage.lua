@@ -21,12 +21,14 @@ HotBar.loadConfig = function()--{{{
 	HotBar.config.main = {};
 	HotBar.config.main.numSlots = 10;
 	HotBar.config.main.size = 75;
+	HotBar.config.main.smart = "traditional";
 	HotBar.config.items = {};
 
 	local ini = bcUtils.readINI("hotbar.ini");
 	if not bcUtils.tableIsEmpty(ini) then
 		if not ini.main then ini.main = {} end
 		if not ini.items then ini.items = {} end -- safeguard
+		HotBar.config.main.smart = ini.main.smart or "traditional";
 		HotBar.config.main.numSlots = tonumber(ini.main.numSlots) or 10;
 		HotBar.config.main.size = tonumber(ini.main.size) or 75;
 		for k,v in pairs(ini.items) do
@@ -216,7 +218,7 @@ function HotBarISInventoryPage:onMouseUp(x, y) -- {{{
 		end
 	end
 	table.sort(items);
-	
+
 	local lastItem = "";
 	local i = 1;
 	local s = math.floor(x / (self.width / HotBar.config.main.numSlots));
@@ -235,14 +237,48 @@ function HotBar.ActivateSlot(i) -- {{{
 	if HotBar.inventoryPage.items[i] ~= nil then
 		local item = getPlayer():getInventory():FindAndReturn(HotBar.inventoryPage.items[i].item);
 		if not item then return end;
-		local primary = true;
-		local twohanded = false;
-		if instanceof(item, "HandWeapon") then
-			twohanded = item:isTwoHandWeapon()
+
+		if HotBar.config.main.smart == "smart" then
+			if instanceof(item, "HandWeapon") then
+				local primary = true;
+				local twohanded = item:isTwoHandWeapon()
+				ISTimedActionQueue.add(ISEquipWeaponAction:new(getPlayer(), item, 50, primary, twohanded));
+			elseif instanceof(item, "InventoryContainer") and item:canBeEquipped() == "Back" then
+				if item == getPlayer():getClothingItem_Back() then
+					getPlayer():Say(getText("UI_AlreadyWorn"));
+				else
+					ISInventoryPaneContextMenu.wearItem(item, getPlayer():getPlayerNum());
+				end
+			elseif item:getCategory() == "Food" then
+				if item:getHungChange() < 0 then
+					ISInventoryPaneContextMenu.onEatItems({item}, 0.25, getPlayer():getPlayerNum());
+				else
+					ISInventoryPaneContextMenu.onEatItems({item}, 1, getPlayer():getPlayerNum());
+				end
+			elseif item:isCanBandage() then
+				local bodyPartDamaged = ISInventoryPaneContextMenu.haveDamagePart(getPlayer():getPlayerNum());
+				if #bodyPartDamaged > 0 then
+					ISInventoryPaneContextMenu.onApplyBandage({item}, bodyPartDamaged[1], getPlayer():getPlayerNum());
+				else
+					getPlayer():Say(getText("UI_NotInjured"));
+				end
+			elseif item:getCategory() == "Literature" then
+				ISInventoryPaneContextMenu.onLiteratureItems({item}, getPlayer():getPlayerNum());
+			elseif luautils.stringStarts(item:getType(), "Pills") then
+				ISInventoryPaneContextMenu.onPillsItems({item}, getPlayer():getPlayerNum());
+			else
+				getPlayer():Say(getText("UI_DoNotKnowWhatToDoWith", item:getDisplayName()));
+			end
 		else
-			primary = false;
+			local primary = true;
+			local twohanded = false;
+			if instanceof(item, "HandWeapon") then
+				twohanded = item:isTwoHandWeapon()
+			else
+				primary = false;
+			end
+			ISTimedActionQueue.add(ISEquipWeaponAction:new(getPlayer(), item, 50, primary, twohanded));
 		end
-		ISTimedActionQueue.add(ISEquipWeaponAction:new(getPlayer(), item, 50, primary, twohanded));
 	end
 end
 -- }}}

@@ -71,6 +71,14 @@ function HotBarKeyBinds.NumSlotsChanged(_, box)
 	end
 end
 
+function HotBarKeyBinds.SmartChanged(_, box)
+	if box.options[box.selected] ~= nil then
+		local choices = { "traditional", "smart" }
+		HotBar.config.main.smart = choices[box.selected];
+		HotBar.saveConfig();
+	end
+end
+
 HotBarKeyBinds.MainOptionsCreate = MainOptions.create;
 MainOptions.create = function(self)
 	HotBarKeyBinds.MainOptionsCreate(self);
@@ -93,11 +101,16 @@ MainOptions.create = function(self)
 	else
 		selected = 2;
 	end
-
 	local box = self:addCombo(x, y, w, h, getText("UI_optionscreen_hotbar_change_size"), { getText("UI_optionscreen_Large"), getText("UI_optionscreen_Medium"), getText("UI_optionscreen_Small") }, selected, self, HotBarKeyBinds.SizeChanged);
 
-	local selected = math.floor(HotBar.config.main.numSlots / 5);
+	selected = math.floor(HotBar.config.main.numSlots / 5);
+	box = self:addCombo(x, y, w, h, getText("UI_optionscreen_hotbar_num_slots"), { "5", "10", "15", "20", "25", "30" }, selected, self, HotBarKeyBinds.NumSlotsChanged);
 
-	local box = self:addCombo(x, y, w, h, getText("UI_optionscreen_hotbar_num_slots"), { "5", "10", "15", "20", "25", "30" }, selected, self, HotBarKeyBinds.NumSlotsChanged);
+	if HotBar.config.main.smart == "smart" then
+		selected = 2;
+	else
+		selected = 1;
+	end
+	box = self:addCombo(x, y, w, h, getText("UI_optionscreen_hotbar_smartaction"), { getText("UI_optionscreen_traditional"), getText("UI_optionscreen_smart") }, selected, self, HotBarKeyBinds.SmartChanged);
 end
 
