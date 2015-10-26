@@ -111,6 +111,6 @@ MainOptions.create = function(self)
 	else
 		selected = 1;
 	end
-	box = self:addCombo(x, y, w, h, getText("UI_optionscreen_hotbar_smartaction"), { "traditional", "smart" }, selected, self, HotBarKeyBinds.SmartChanged);
+	box = self:addCombo(x, y, w, h, getText("UI_optionscreen_hotbar_smartaction"), { getText("UI_optionscreen_traditional"), getText("UI_optionscreen_smart") }, selected, self, HotBarKeyBinds.SmartChanged);
 end
 

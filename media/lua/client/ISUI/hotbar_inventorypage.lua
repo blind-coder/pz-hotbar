@@ -245,7 +245,7 @@ function HotBar.ActivateSlot(i) -- {{{
 				ISTimedActionQueue.add(ISEquipWeaponAction:new(getPlayer(), item, 50, primary, twohanded));
 			elseif instanceof(item, "InventoryContainer") and item:canBeEquipped() == "Back" then
 				if item == getPlayer():getClothingItem_Back() then
-					getPlayer():Say("I already wear that.");
+					getPlayer():Say(getText("UI_AlreadyWorn"));
 				else
 					ISInventoryPaneContextMenu.wearItem(item, getPlayer():getPlayerNum());
 				end
@@ -260,14 +260,14 @@ function HotBar.ActivateSlot(i) -- {{{
 				if #bodyPartDamaged > 0 then
 					ISInventoryPaneContextMenu.onApplyBandage({item}, bodyPartDamaged[1], getPlayer():getPlayerNum());
 				else
-					getPlayer():Say("I'm not injured.");
+					getPlayer():Say(getText("UI_NotInjured"));
 				end
 			elseif item:getCategory() == "Literature" then
 				ISInventoryPaneContextMenu.onLiteratureItems({item}, getPlayer():getPlayerNum());
 			elseif luautils.stringStarts(item:getType(), "Pills") then
 				ISInventoryPaneContextMenu.onPillsItems({item}, getPlayer():getPlayerNum());
 			else
-				getPlayer():Say("I don't know what to do with a "..tostring(item:getDisplayName()));
+				getPlayer():Say(getText("UI_DoNotKnowWhatToDoWith", item:getDisplayName()));
 			end
 		else
 			local primary = true;
