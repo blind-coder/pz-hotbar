@@ -79,6 +79,14 @@ function HotBarKeyBinds.SmartChanged(_, box)
 	end
 end
 
+function HotBarKeyBinds.ContextChanged(_, box)
+	if box.options[box.selected] ~= nil then
+		local choices = { "yes", "no" }
+		HotBar.config.main.showContext = choices[box.selected];
+		HotBar.saveConfig();
+	end
+end
+
 HotBarKeyBinds.MainOptionsCreate = MainOptions.create;
 MainOptions.create = function(self)
 	HotBarKeyBinds.MainOptionsCreate(self);
@@ -112,5 +120,12 @@ MainOptions.create = function(self)
 		selected = 1;
 	end
 	box = self:addCombo(x, y, w, h, getText("UI_optionscreen_hotbar_smartaction"), { getText("UI_optionscreen_traditional"), getText("UI_optionscreen_smart") }, selected, self, HotBarKeyBinds.SmartChanged);
+
+	if HotBar.config.main.showContext == "yes" then
+		selected = 1;
+	else
+		selected = 2;
+	end
+	box = self:addCombo(x, y, w, h, getText("UI_optionscreen_show_contextmenu"), { getText("UI_optionscreen_show_contextmenu_yes"), getText("UI_optionscreen_show_contextmenu_no") }, selected, self, HotBarKeyBinds.ContextChanged);
 end
 

@@ -43,5 +43,8 @@ UI_DE = {
 	UI_optionscreen_binding_Slot28 = "Slot 28",
 	UI_optionscreen_binding_Slot29 = "Slot 29",
 	UI_optionscreen_binding_Slot30 = "Slot 30",
+	UI_optionscreen_show_contextmenu = "Hotbar im Kontextmenue anzeigen:",
+	UI_optionscreen_show_contextmenu_yes = "Ja",
+	UI_optionscreen_show_contextmenu_no = "Nein (nur Drag'n'Drop!)",
 	UI_Clear = "Entfernen"
 }

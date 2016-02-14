@@ -22,6 +22,7 @@ HotBar.loadConfig = function()--{{{
 	HotBar.config.main.numSlots = 10;
 	HotBar.config.main.size = 75;
 	HotBar.config.main.smart = "traditional";
+	HotBar.config.main.showContext = "yes";
 	HotBar.config.items = {};
 
 	local ini = bcUtils.readINI("hotbar.ini");
@@ -29,6 +30,7 @@ HotBar.loadConfig = function()--{{{
 		if not ini.main then ini.main = {} end
 		if not ini.items then ini.items = {} end -- safeguard
 		HotBar.config.main.smart = ini.main.smart or "traditional";
+		HotBar.config.main.showContext = ini.main.showContext or "yes";
 		HotBar.config.main.numSlots = tonumber(ini.main.numSlots) or 10;
 		HotBar.config.main.size = tonumber(ini.main.size) or 75;
 		for k,v in pairs(ini.items) do
@@ -368,6 +370,7 @@ end
 -- }}}
 
 HotBar.FillContextMenu = function(player, context, items) -- {{{
+	if HotBar.config.main.showContext == "no" then return end
 	if #items > 1 then return end; -- we only create an entry for the first object
 	if HotBar.inventoryPage == nil then -- safeguard
 		HotBarISInventoryPage.onKeyPressed(getCore():getKey("Toggle Inventory"));
