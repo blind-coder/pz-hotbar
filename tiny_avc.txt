@@ -1,2 +1,0 @@
-version:0.3.3
-url:http://pzmap.crash-override.net/hotbar.txt
