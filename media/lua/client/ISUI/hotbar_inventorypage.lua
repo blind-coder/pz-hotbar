@@ -88,7 +88,9 @@ end
 HotBar.MainOptionsOnResolutionChange = MainOptions.onResolutionChange;
 function MainOptions:onResolutionChange(oldw, oldh, neww, newh) -- {{{
 	HotBar.MainOptionsOnResolutionChange(self, oldw, oldh, neww, newh);
-	HotBar.ReInit()
+	if MainScreen.instance.inGame then
+		HotBar.ReInit()
+	end
 end
 -- }}}
 
@@ -341,6 +343,12 @@ HotBarISInventoryPage.onKeyPressed = function(key) -- {{{
 end
 -- }}}
 HotBar.Toggle = function() -- {{{
+	if not MainScreen.instance.inGame then
+		if HotBar.inventoryPage == nil then
+			HotBar.inventoryPage:setVisible(false);
+		end
+		return;
+	end
 	if HotBar.inventoryPage == nil then
 		HotBar.inventoryPage = HotBarISInventoryPage:new(0, getCore():getScreenHeight()-HotBar.config.main.size, 0, HotBar.config.main.size, 0); -- x and width now set in constructor
 		HotBar.inventoryPage:setVisible(true);
