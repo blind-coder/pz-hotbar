@@ -4,6 +4,6 @@ description=A small hotbar for 5-20 often-used items
 id=hotbar
 url=http://theindiestone.com/forums/index.php/topic/13356-hotbar-for-quick-item-access
 require=bcUtils
-modversion=0.7.3
+modversion=0.7.4
 pzversion=32.24
 versionurl=https://raw.githubusercontent.com/blind-coder/pz-hotbar/master/mod.info
