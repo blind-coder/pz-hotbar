@@ -162,7 +162,9 @@ function HotBarISInventoryItem:render() -- {{{
 		alpha = 1;
 	end
 
-	self:drawTextureScaled(texture, (self.width - imgSize) / 2, 0, imgSize, imgSize, alpha, 1, 1, 1);
+	if texture ~= nil then
+		self:drawTextureScaled(texture, (self.width - imgSize) / 2, 0, imgSize, imgSize, alpha, 1, 1, 1);
+	end
 	local text = "("..self.object.count..")";
 	local textWidth = getTextManager():MeasureStringX(UIFont.Small, text);
 	local textHeight = getTextManager():MeasureStringY(UIFont.Small, text);
@@ -203,7 +205,9 @@ function HotBarISInventoryPage:updateInventory(force) -- {{{
 				self.items[i].count = 0;
 			end
 			local p = InventoryItemFactory.CreateItem(self.items[i].item);
-			self.items[i].texture = p:getTexture();
+			if p ~= nil then
+				self.items[i].texture = p:getTexture();
+			end
 		else
 			self.items[i].count = 0;
 		end
