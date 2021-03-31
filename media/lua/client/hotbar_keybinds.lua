@@ -87,6 +87,14 @@ function HotBarKeyBinds.ContextChanged(_, box)
 	end
 end
 
+function HotBarKeyBinds.DirectionChanged(_, box)
+	if box.options[box.selected] ~= nil then
+		local choices = { "yes", "no" }
+		HotBar.config.main.horizontal = choices[box.selected];
+		HotBar.saveConfig();
+	end
+end
+
 HotBarKeyBinds.MainOptionsCreate = MainOptions.create;
 MainOptions.create = function(self)
 	HotBarKeyBinds.MainOptionsCreate(self);
@@ -127,5 +135,12 @@ MainOptions.create = function(self)
 		selected = 2;
 	end
 	box = self:addCombo(x, y, w, h, getText("UI_optionscreen_show_contextmenu"), { getText("UI_optionscreen_show_contextmenu_yes"), getText("UI_optionscreen_show_contextmenu_no") }, selected, self, HotBarKeyBinds.ContextChanged);
+
+	if HotBar.config.main.horizontal == "yes" then
+		selected = 1;
+	else
+		selected = 2;
+	end
+	box = self:addCombo(x, y, w, h, getText("UI_optionscreen_direction"), { getText("UI_optionscreen_direction_horizontal"), getText("UI_optionscreen_direction_vertical") }, selected, self, HotBarKeyBinds.DirectionChanged )
 end
 

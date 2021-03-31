@@ -151,6 +151,9 @@ function HotBarISInventoryItem:render() -- {{{
 	local imgSize = math.min(self.width, self.height-10);
 	local alpha = 0.3;
 
+	if self.object.count == nil then
+		HotBar.inventoryPage:updateInventory(true);
+	end
 	if self.object.count > 0 then
 		if texture == nil then
 			local i = getSpecificPlayer(self.parent.player):getInventory():FindAndReturn(self.object.item);
@@ -328,8 +331,8 @@ function HotBarISInventoryPage:new (x, y, width, height, player) -- {{{
 		o.items[i].item = HotBar.config.items[i];
 	end
 
-	o:setWidth(height * HotBar.config.main.numSlots);
-	o:setX((getCore():getScreenWidth() - height * HotBar.config.main.numSlots) / 2);
+	-- o:setWidth(height * HotBar.config.main.numSlots);
+	-- o:setX((getCore():getScreenWidth() - height * HotBar.config.main.numSlots) / 2);
 	return o
 end
 -- }}}
@@ -349,16 +352,26 @@ end
 HotBar.Toggle = function() -- {{{
 	if not MainScreen.instance.inGame then
 		if HotBar.inventoryPage == nil then
-			HotBar.inventoryPage:setVisible(false);
+			HotBar.collapsibleWindow:setVisible(false);
 		end
 		return;
 	end
 	if HotBar.inventoryPage == nil then
-		HotBar.inventoryPage = HotBarISInventoryPage:new(0, getCore():getScreenHeight()-HotBar.config.main.size, 0, HotBar.config.main.size, 0); -- x and width now set in constructor
-		HotBar.inventoryPage:setVisible(true);
-		HotBar.inventoryPage:addToUIManager();
+		local y = getCore():getScreenHeight()-HotBar.config.main.size;
+		local height = HotBar.config.main.size;
+		local width = height * HotBar.config.main.numSlots;
+		local x = (getCore():getScreenWidth() - height * HotBar.config.main.numSlots) / 2;
+
+		HotBar.collapsibleWindow = ISCollapsableWindow:new(x, y, width+8, height+16);
+		HotBar.inventoryPage = HotBarISInventoryPage:new(4, 16, width, height, 0);
+		HotBar.collapsibleWindow:addChild(HotBar.inventoryPage);
+		HotBar.collapsibleWindow:setVisible(true);
+		HotBar.collapsibleWindow:addToUIManager();
+		HotBar.collapsibleWindow.closeButton:setVisible(false);
+		HotBar.collapsibleWindow.pinButton:setVisible(false);
+		HotBar.collapsibleWindow:setResizable(false);
 	else
-		HotBar.inventoryPage:setVisible(not HotBar.inventoryPage:getIsVisible());
+		HotBar.collapsibleWindow:setVisible(not HotBar.collapsibleWindow:getIsVisible());
 	end
 end
 -- }}}
