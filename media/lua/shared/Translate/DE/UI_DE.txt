@@ -46,5 +46,8 @@ UI_DE = {
 	UI_optionscreen_show_contextmenu = "Hotbar im Kontextmenue anzeigen:",
 	UI_optionscreen_show_contextmenu_yes = "Ja",
 	UI_optionscreen_show_contextmenu_no = "Nein (nur Drag'n'Drop!)",
-	UI_Clear = "Entfernen"
+	UI_Clear = "Entfernen",
+	UI_optionscreen_direction = "Orientierung",
+	UI_optionscreen_direction_horizontal = "Horizontal",
+	UI_optionscreen_direction_vertical = "Vertikal"
 }

@@ -46,5 +46,8 @@ UI_EN = {
 	UI_optionscreen_show_contextmenu = "Show Hotbar in contextmenu:",
 	UI_optionscreen_show_contextmenu_yes = "Yes",
 	UI_optionscreen_show_contextmenu_no = "No (Drag'n'Drop only!)",
-	UI_Clear = "Clear"
+	UI_Clear = "Clear",
+	UI_optionscreen_direction = "Orientation",
+	UI_optionscreen_direction_horizontal = "Horizontal",
+	UI_optionscreen_direction_vertical = "Vertical"
 }

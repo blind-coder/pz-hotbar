@@ -33,6 +33,7 @@ HotBar.loadConfig = function()--{{{
 		HotBar.config.main.showContext = ini.main.showContext or "yes";
 		HotBar.config.main.numSlots = tonumber(ini.main.numSlots) or 10;
 		HotBar.config.main.size = tonumber(ini.main.size) or 75;
+		HotBar.config.main.horizontal = ini.main.horizontal or "yes";
 		for k,v in pairs(ini.items) do
 			HotBar.config.items[tonumber(k)] = v;
 		end
@@ -177,10 +178,18 @@ end
 
 HotBarISInventoryPage = ISPanel:derive("HotBarISInventoryPage");
 function HotBarISInventoryPage:createChildren() -- {{{
-	local offx = self.width / HotBar.config.main.numSlots;
-	self.slots = {};
-	for x=0,HotBar.config.main.numSlots-1 do
-		self.slots[x] = self:addChild(HotBarISInventoryItem:new(offx * x + 5, 5, offx - 10, self.height - 10, self, self.items[x], x));
+	if HotBar.config.main.horizontal == "yes" then
+		local offx = self.width / HotBar.config.main.numSlots;
+		self.slots = {};
+		for x=0,HotBar.config.main.numSlots-1 do
+			self.slots[x] = self:addChild(HotBarISInventoryItem:new(offx * x + 5, 5, offx - 10, self.height - 10, self, self.items[x], x));
+		end
+	else
+		local offy = self.height / HotBar.config.main.numSlots;
+		self.slots = {};
+		for x=0,HotBar.config.main.numSlots-1 do
+			self.slots[x] = self:addChild(HotBarISInventoryItem:new(5, offy * x + 5, self.width - 10, offy - 10, self, self.items[x], x));
+		end
 	end
 end
 -- }}}
@@ -357,18 +366,31 @@ HotBar.Toggle = function() -- {{{
 		return;
 	end
 	if HotBar.inventoryPage == nil then
-		local y = getCore():getScreenHeight()-HotBar.config.main.size;
-		local height = HotBar.config.main.size;
-		local width = height * HotBar.config.main.numSlots;
-		local x = (getCore():getScreenWidth() - height * HotBar.config.main.numSlots) / 2;
+		if HotBar.config.main.horizontal == "yes" then
+			local height = HotBar.config.main.size;
+			local y = getCore():getScreenHeight()-(height+16);
+			local width = height * HotBar.config.main.numSlots;
+			local x = (getCore():getScreenWidth() - (height+16) * HotBar.config.main.numSlots) / 2;
 
-		HotBar.collapsibleWindow = ISCollapsableWindow:new(x, y, width+8, height+16);
-		HotBar.inventoryPage = HotBarISInventoryPage:new(4, 16, width, height, 0);
-		HotBar.collapsibleWindow:addChild(HotBar.inventoryPage);
+			HotBar.collapsibleWindow = ISCollapsableWindow:new(x, y, width+8, height+16);
+			HotBar.inventoryPage = HotBarISInventoryPage:new(4, 16, width, height, 0);
+			HotBar.collapsibleWindow:addChild(HotBar.inventoryPage);
+		else
+			local width = HotBar.config.main.size;
+			local x = getCore():getScreenWidth()-(width+8);
+			local height = width * HotBar.config.main.numSlots;
+			local y = (getCore():getScreenHeight() - (width+8) * HotBar.config.main.numSlots) / 2;
+
+			HotBar.collapsibleWindow = ISCollapsableWindow:new(x, y, width+8, height+16);
+			HotBar.inventoryPage = HotBarISInventoryPage:new(4, 16, width, height, 0);
+			HotBar.collapsibleWindow:addChild(HotBar.inventoryPage);
+		end
 		HotBar.collapsibleWindow:setVisible(true);
 		HotBar.collapsibleWindow:addToUIManager();
 		HotBar.collapsibleWindow.closeButton:setVisible(false);
 		HotBar.collapsibleWindow.pinButton:setVisible(false);
+		HotBar.collapsibleWindow.collapseButton:setVisible(false);
+		HotBar.collapsibleWindow.infoButton:setVisible(false);
 		HotBar.collapsibleWindow:setResizable(false);
 	else
 		HotBar.collapsibleWindow:setVisible(not HotBar.collapsibleWindow:getIsVisible());
@@ -380,6 +402,11 @@ HotBar.ReInit = function() -- {{{
 		HotBar.inventoryPage:setVisible(false);
 		HotBar.inventoryPage:removeFromUIManager();
 		HotBar.inventoryPage = nil;
+	end
+	if HotBar.collapsibleWindow ~= nil then
+		HotBar.collapsibleWindow:setVisible(false);
+		HotBar.collapsibleWindow:removeFromUIManager();
+		HotBar.collapsibleWindow = nil;
 	end
 	HotBar.Toggle();
 end

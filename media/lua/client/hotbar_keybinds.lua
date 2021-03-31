@@ -92,6 +92,9 @@ function HotBarKeyBinds.DirectionChanged(_, box)
 		local choices = { "yes", "no" }
 		HotBar.config.main.horizontal = choices[box.selected];
 		HotBar.saveConfig();
+		if MainScreen.instance.inGame then
+			HotBar.ReInit();
+		end
 	end
 end
 
